@@ -93,7 +93,9 @@ private:
   jsonn build_rc_subscription_request(string);
   jsonn build_kpm_subscription_request(string);
   void startup_http_listener();
+  void start_e2_socket_client();
   void shutdown_http_listener();
+  void shutdown_e2_socket_client()
   void handle_request(http_request request);
   void handle_error(pplx::task<void>& t, const utility::string_t msg);
 
@@ -102,6 +104,8 @@ private:
   XappSettings * config_ref;
   SubscriptionHandler *subhandler_ref;
   std::unique_ptr<http_listener> listener;
+
+  int sockfd;
 
   std::mutex *xapp_mutex;
   std::vector<std::thread> xapp_rcv_thread;

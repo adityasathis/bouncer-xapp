@@ -16,6 +16,14 @@
 # ==================================================================================
 */
 
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cstring>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include "../../ext/protobuf/rc.pb.h"
 #include "msgs_proc.hpp"
 
 
@@ -70,6 +78,8 @@ bool XappMsgHandler::decode_subscription_response(unsigned char* data_buf, size_
 	 }
 	ASN_STRUCT_FREE(asn_DEF_E2AP_PDU, e2pdu);
 	return res;
+
+
 
 }
 
@@ -354,6 +364,22 @@ void XappMsgHandler::operator()(rmr_mbuf_t *message, bool *resend)
 				message->sub_id = -1;
 				*resend = true;
 			}
+
+			oran::service_message message;
+			message.set_type(1);
+
+			for (int i = 0; i < 2; i++) {
+				rc_per_ue *rc = message.add_ue_max_prb_allocations();
+				rc->set_ue_index(/* Get UE index from Alexandre's struct */);
+				rc->set_max_prb(/* Get max PRBs from Alexandre's PRB */);
+			}
+
+			std::string serialized_message = message.SerializeAsString();
+
+			/* Connect using the existing connection */
+			if (send(sockfd, serialized_message.size(), sizeof(serialized_message.size()), 0) == -1) {
+				mdclog_write(MDCLOG_ERR, "Error :: Could not send message");
+			}
 			break;
 
 		}
@@ -364,5 +390,3 @@ void XappMsgHandler::operator()(rmr_mbuf_t *message, bool *resend)
 
 	ASN_STRUCT_FREE(asn_DEF_E2AP_PDU, e2pdu);
 }
-
-

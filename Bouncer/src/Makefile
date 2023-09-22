@@ -13,11 +13,14 @@ ASNSRC_BOUNCER:=../asn1c_defs/bouncer
 E2APSRC:=./xapp-asn/e2ap
 E2SMSRC:=./xapp-asn/e2sm
 
+PROTOBUFSRC:=./ext/protobuf
+
 ####### Logging library and flags
 CLOGFLAGS:= `pkg-config mdclog --cflags`
 LOG_LIBS:= `pkg-config mdclog --libs`
 CURL_LIBS:= `pkg-config libcurl --libs`
 RNIB_LIBS:= -pthread /usr/local/include/rnib/rnibreader.a
+PROTO_LIBS:= `pkg-config protobuf`
 ######## Keep include dirs separate so we have transparency
 
 
@@ -36,10 +39,11 @@ ASNFLAGS=-I$(ASNSRC) -DASN_DISABLE_OER_SUPPORT
 ASN_BOUNCER_FLAGS=-I$(ASNSRC_BOUNCER)
 E2APFLAGS = -I$(E2APSRC)
 E2SMFLAGS = -I$(E2SMSRC)
+PROTOBUFFLAGS = -I$(PROTOBUFSRC)
 
 ########libs
 
-LIBS= -lsdl -lrmr_si -lpthread -lm -lboost_system -lcrypto -lssl -lcpprest $(LOG_LIBS) $(CURL_LIBS) $(RNIB_LIBS)
+LIBS= -lsdl -lrmr_si -lpthread -lm -lboost_system -lcrypto -lssl -lcpprest `pkg-config --libs protobuf` $(LOG_LIBS) $(CURL_LIBS) $(RNIB_LIBS)
 COV_FLAGS= -fprofile-arcs -ftest-coverage
 
 #######
@@ -52,6 +56,7 @@ E2AP_SRC= $(wildcard $(E2APSRC)/*.cc)
 E2SM_SRC= $(wildcard $(E2SMSRC)/*.cc)
 ASN1C_SRC= $(wildcard $(ASNSRC)/*.c)
 ASN1C_B_SRC= $(wildcard $(ASNSRC)/bouncer/*.c)
+PROTOBUF_SRC = $(wildcard $(PROTOBUFSRC)/*.cc)
 
 ##############Objects
 UTIL_OBJ=${UTIL_SRC:.cc=.o}
@@ -63,7 +68,7 @@ E2AP_OBJ = $(E2AP_SRC:.cc=.o)
 E2SM_OBJ = $(E2SM_SRC:.cc=.o)
 ASN1C_MODULES = $(ASN1C_SRC:.c=.o)
 ASN1C_BOUNCER_MODULES = $(ASN1C_B_SRC:.c=.o)
-
+PROTOBUF_OBJ = $(PROTOBUF_SRC:.c=.o)
 
 $(ASN1C_MODULES): export CFLAGS = $(C_BASEFLAGS) $(ASNFLAGS) $(ASN_BOUNCER_FLAGS)
 $(ASN1C_BOUNCER_MODULES): export CFLAGS = $(C_BASEFLAGS) $(ASNFLAGS) $(ASN_BOUNCER_FLAGS)
@@ -72,11 +77,12 @@ $(UTIL_OBJ):export CPPFLAGS=$(BASEFLAGS) $(UTILFLAGS) $(E2APFLAGS) $(E2SMFLAGS) 
 $(MSG_OBJ):export CPPFLAGS=$(BASEFLAGS) $(MSGFLAGS) $(ASNFLAGS) $(ASN_BOUNCER_FLAGS) $(E2APFLAGS) $(E2SMFLAGS)
 $(E2AP_OBJ): export CPPFLAGS = $(BASEFLAGS) $(ASNFLAGS) $(ASN_BOUNCER_FLAGS) $(E2APFLAGS)
 $(E2SM_OBJ): export CPPFLAGS = $(BASEFLAGS) $(ASNFLAGS) $(ASN_BOUNCER_FLAGS) $(E2SMFLAGS)
-$(XAPP_OBJ): export CPPFLAGS = $(BASEFLAGS) $(XAPPFLAGS) $(UTILFLAGS) $(MSGFLAGS) $(E2APFLAGS) $(E2SMFLAGS) $(ASNFLAGS) $(ASN_BOUNCER_FLAGS)
+$(XAPP_OBJ): export CPPFLAGS = $(BASEFLAGS) $(XAPPFLAGS) $(UTILFLAGS) $(MSGFLAGS) $(E2APFLAGS) $(E2SMFLAGS) $(ASNFLAGS) $(ASN_BOUNCER_FLAGS) $(PROTOBUFFLAGS)
+$(PROTOBUF_OBJ): export CPPFLAGS = $(BASEFLAGS) $(MSGFLAGS) $(PROTOBUFFLAGS)
 
-$(B_XAPP_OBJ):export CPPFLAGS=$(BASEFLAGS) $(B_FLAGS) $(XAPPFLAGS) $(UTILFLAGS) $(MSGFLAGS) $(E2APFLAGS) $(E2SMFLAGS) $(ASNFLAGS) $(ASN_BOUNCER_FLAGS)
+$(B_XAPP_OBJ):export CPPFLAGS=$(BASEFLAGS) $(B_FLAGS) $(XAPPFLAGS) $(UTILFLAGS) $(MSGFLAGS) $(E2APFLAGS) $(E2SMFLAGS) $(ASNFLAGS) $(ASN_BOUNCER_FLAGS) $(PROTOBUFFLAGS)
 
-OBJ= $(B_XAPP_OBJ) $(UTIL_OBJ) $(MSG_OBJ)  $(ASN1C_MODULES) $(ASN1C_BOUNCER_MODULES) $(E2AP_OBJ) $(E2SM_OBJ) $(XAPP_OBJ)
+OBJ= $(B_XAPP_OBJ) $(UTIL_OBJ) $(MSG_OBJ)  $(ASN1C_MODULES) $(ASN1C_BOUNCER_MODULES) $(E2AP_OBJ) $(E2SM_OBJ) $(XAPP_OBJ) $(PROTOBUF_OBJ)
 
 print-%  : ; @echo $* = $($*)
 
@@ -87,4 +93,4 @@ install: b_xapp_main
 	install -D b_xapp_main /usr/local/bin/b_xapp_main
 
 clean:
-	-rm -f *.o $(ASNSRC)/*.o $(ASNSRC_BOUNCER)/*.o $(E2APSRC)/*.o $(UTILSRC)/*.o $(E2SMSRC)/*.o $(MSGSRC)/*.o b_xapp_main
+	-rm -f *.o $(ASNSRC)/*.o $(ASNSRC_BOUNCER)/*.o $(E2APSRC)/*.o $(UTILSRC)/*.o $(E2SMSRC)/*.o $(MSGSRC)/*.o $(PROTOBUFSRC)/*.o b_xapp_main

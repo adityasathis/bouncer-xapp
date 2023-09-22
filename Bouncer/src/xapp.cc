@@ -76,6 +76,8 @@ void Xapp::startup(SubscriptionHandler &sub_ref) {
 
 	startup_http_listener();	// throws std::exception
 
+	start_e2_socket_client(); // throws std::exception
+
 	//send subscriptions.
 	// startup_subscribe_requests(); // throws std::exception
 
@@ -116,6 +118,8 @@ void Xapp::shutdown(){
 	rmr_ref->set_listen(false);
 
 	shutdown_http_listener();
+
+	shutdown_e2_socket_client();
 
 	//Joining the threads
 	int threadcnt = xapp_rcv_thread.size();
@@ -734,6 +738,35 @@ void Xapp::startup_http_listener() {
 		mdclog_write(MDCLOG_ERR, "startup http listener exception: %s", e.what());
 		throw;
 	}
+}
+
+void Xapp:start_e2_socket_client() {
+	mdclog_write(MDCLOG_INFO, "Starting client to E2 RAN");
+
+    // Create a socket and connect to the server
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        perror("Socket creation failed");
+        return;
+    }
+
+    struct sockaddr_in server_addr;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(5000);
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+        perror("Connection to server failed");
+        close(sockfd);
+        return;
+    }
+}
+
+void Xapp:shutdown_e2_socket_client() {
+	mdclog_write(MDCLOG_INFO, "Shutting down E2 RAN connection");
+
+	if (sockfd)
+		close(sockfd);
 }
 
 void Xapp::shutdown_http_listener() {
